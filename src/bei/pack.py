@@ -18,10 +18,14 @@
 
 import argparse
 import binascii
+import importlib
 import lzma
+import multiprocessing
 import os
 import string
 import sys
+import tempfile
+import toml
 import zipfile
 
 from typing import Optional
@@ -112,6 +116,30 @@ def collect_zip(filename: str) -> dict[str, bytes]:
     return contents
 
 
+def build_pep517(tmpdir: str, srcdir: str) -> str:
+    os.chdir(srcdir)
+    os.dup2(2, 1)  # setuptools is chatty on stdout, so >&2
+    pyproject = toml.load('pyproject.toml')
+    backend = importlib.import_module(pyproject['build-system']['build-backend'])
+    _ = backend.build_wheel(tmpdir)  # ignore the filename: we scan for it later
+    sys.exit(0)
+
+
+def collect_pep517(path: str) -> dict[str, bytes]:
+    contents = {}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # this is a bit too global-stateful, so fork a subprocess
+        process = multiprocessing.Process(target=build_pep517, args=(tmpdir, path))
+        process.start()
+        process.join()
+
+        for entry in os.scandir(tmpdir):
+            contents.update(collect_zip(entry.path))
+
+    return contents
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--xz', '-J', action='store_true', help="compress the output with `xz`")
@@ -119,6 +147,8 @@ def main() -> None:
     parser.add_argument('--output', '-o', help="write output to a file (default: stdout)")
     parser.add_argument('--main', '-m', metavar='MODULE:FUNC', help="use FUNC from MODULE as the main function")
     parser.add_argument('--zip', '-z', action='append', default=[], help="include files from a zipfile (or wheel)")
+    parser.add_argument('--build', metavar='DIR', action='append', default=[],
+                        help="PEP-517 from a given source directory")
     parser.add_argument('files', nargs='*', help="files to include in the beipack")
     args = parser.parse_args()
 
@@ -126,6 +156,9 @@ def main() -> None:
 
     for file in args.zip:
         contents.update(collect_zip(file))
+
+    for path in args.build:
+        contents.update(collect_pep517(path))
 
     result = pack(contents, args.main).encode('utf-8')
 
