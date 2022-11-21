@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools >= 61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = 'beipack'
+version = '0'
+description = 'beipack'
+authors = [{name = "Allison Karlitskaya", email = "allison.karlitskaya@redhat.com"}]
+license = {file = "COPYING"}
+readme = "README.md"
+classifiers = ["License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"]
+
+[project.urls]
+Home = "https://github.com/allisonkarlitskaya/beipack/"
+
+[tool.setuptools.package-data]
+bei = ["*.py.template"]
+
+[project.scripts]
+beipack = 'bei.pack:main'
+
+[tool.mypy]
+mypy_path = 'src'
+
+[tool.pylint]
+max-line-length = 118
+disable = [
+  "C0114",  # Missing module docstring
+  "C0115",  # Missing class docstring
+  "R0902",  # Too many instance attributes
+  "R0903",  # Too few public methods
+  "R0913",  # Too many arguments
+  "R1705",  # Unnecessary "else" after "return"
+  "W1113",  # Keyword argument before variable positional arguments  (PEP-570 is Python 3.8)
+]

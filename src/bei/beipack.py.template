@@ -1,0 +1,21 @@
+# beipack https://github.com/allisonkarlitskaya/beipack
+
+from binascii import a2b_base64
+import importlib.abc
+import importlib
+import sys
+
+contents = $contents
+
+modules = {
+    filename.removesuffix('.py').removesuffix('/__init__').replace('/', '.'): filename for filename in contents
+}
+
+class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
+    def get_self_source(self): return __loader__.get_data(__file__)
+    def get_data(self, path): return contents[path]
+    def get_filename(self, fullname): return modules[fullname]
+    def find_spec(self, fullname, path, target=None):
+        if fullname not in modules:
+            return None
+        return importlib.util.spec_from_loader(fullname, self)
