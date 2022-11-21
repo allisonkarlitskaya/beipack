@@ -32,8 +32,10 @@ from typing import Optional
 
 
 def escape_string(data: str) -> str:
-    if "'''" not in data:
-        return "r'''" + data + "'''"
+    # Avoid mentioning ' ' ' literally, to make our own packing a bit prettier
+    triplequote = "'" * 3
+    if triplequote not in data:
+        return "r" + triplequote + data + triplequote
     if '"""' not in data:
         return 'r"""' + data + '"""'
     return repr(data)
