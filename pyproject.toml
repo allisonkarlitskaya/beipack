@@ -19,6 +19,7 @@ bei = ["*.py.template"]
 
 [project.scripts]
 beipack = 'bei.pack:main'
+beiboot = 'bei.boot:main'
 
 [tool.mypy]
 mypy_path = 'src'
