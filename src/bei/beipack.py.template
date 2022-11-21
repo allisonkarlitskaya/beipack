@@ -2,7 +2,7 @@
 
 from binascii import a2b_base64
 import importlib.abc
-import importlib
+import importlib.util
 import sys
 
 contents = $contents
