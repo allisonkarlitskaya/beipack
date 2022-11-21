@@ -78,8 +78,8 @@ def dict_repr(contents: dict[str, bytes]) -> str:
 
 def pack(contents: dict[str, bytes], entrypoint: Optional[str], template: Optional[str] = None) -> str:
     if template is None:
-        with open(os.path.realpath(f'{__file__}/../beipack.py.template')) as file:
-            template = ''.join(line for line in file if line.strip())
+        template = __loader__.get_data(os.path.dirname(__file__) + '/beipack.py.template').decode('ascii')
+        template = ''.join(f'{line}\n' for line in template.splitlines() if line)
 
     result = string.Template(template).substitute(contents=dict_repr(contents))
 
