@@ -146,6 +146,7 @@ def collect_pep517(path: str) -> dict[str, bytes]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument('--python', '-p', help="add a #!python3 interpreter line using the given path")
     parser.add_argument('--xz', '-J', action='store_true', help="compress the output with `xz`")
     parser.add_argument('--topdir', help="toplevel directory (ie: all paths are stored relative to this)")
     parser.add_argument('--output', '-o', help="write output to a file (default: stdout)")
@@ -165,6 +166,9 @@ def main() -> None:
         contents.update(collect_pep517(path))
 
     result = pack(contents, args.main).encode('utf-8')
+
+    if args.python:
+        result = b'#!' + args.python.encode('ascii') + b'\n' + result
 
     if args.xz:
         result = lzma.compress(result, preset=lzma.PRESET_EXTREME)
