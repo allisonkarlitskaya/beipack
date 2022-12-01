@@ -113,6 +113,8 @@ def collect_zip(filename: str) -> dict[str, bytes]:
 
     with zipfile.ZipFile(filename) as file:
         for entry in file.filelist:
+            if '.dist-info/' in entry.filename:
+                continue
             contents[entry.filename] = file.read(entry)
 
     return contents
