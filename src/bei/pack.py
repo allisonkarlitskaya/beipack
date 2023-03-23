@@ -82,7 +82,7 @@ def dict_repr(contents: dict[str, bytes]) -> str:
     return '{\n' + ''.join(f'  {repr(k)}: {bytes_repr(v)},\n' for k, v in contents.items()) + '}'
 
 
-def pack(contents: dict[str, bytes], entrypoint: Optional[str], template: Optional[str] = None) -> str:
+def pack(contents: dict[str, bytes], entrypoint: Optional[str] = None, args: str = '', template: Optional[str] = None) -> str:
     if template is None:
         template = __loader__.get_data(os.path.dirname(__file__) + '/beipack.py.template').decode('ascii')
         template = ''.join(f'{line}\n' for line in template.splitlines() if line)
@@ -93,7 +93,7 @@ def pack(contents: dict[str, bytes], entrypoint: Optional[str], template: Option
 
     if entrypoint:
         package, main = entrypoint.split(':')
-        result += f'from {package} import {main} as main\nmain()\n'
+        result += f'from {package} import {main} as main\nmain({args})\n'
 
     return result
 
@@ -151,6 +151,7 @@ def main() -> None:
     parser.add_argument('--topdir', help="toplevel directory (ie: all paths are stored relative to this)")
     parser.add_argument('--output', '-o', help="write output to a file (default: stdout)")
     parser.add_argument('--main', '-m', metavar='MODULE:FUNC', help="use FUNC from MODULE as the main function")
+    parser.add_argument('--main-args', metavar='ARGS', help="arguments to main() in Python syntax", default='')
     parser.add_argument('--zip', '-z', action='append', default=[], help="include files from a zipfile (or wheel)")
     parser.add_argument('--build', metavar='DIR', action='append', default=[],
                         help="PEP-517 from a given source directory")
@@ -165,7 +166,7 @@ def main() -> None:
     for path in args.build:
         contents.update(collect_pep517(path))
 
-    result = pack(contents, args.main).encode('utf-8')
+    result = pack(contents, args.main, args.main_args).encode('utf-8')
 
     if args.python:
         result = b'#!' + args.python.encode('ascii') + b'\n' + result
