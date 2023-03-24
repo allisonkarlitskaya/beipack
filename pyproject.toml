@@ -20,6 +20,7 @@ bei = ["*.py.template"]
 [project.scripts]
 beipack = 'bei.pack:main'
 beiboot = 'bei.boot:main'
+beipack-spawn = 'bei.spawn:main'
 
 [tool.mypy]
 mypy_path = 'src'

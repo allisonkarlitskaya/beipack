@@ -13,6 +13,7 @@ modules = {
 
 class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
     def get_self_source(self): return __loader__.get_data(__file__)
+    def get_contents(self): return contents
     def get_data(self, path): return contents[path]
     def get_filename(self, fullname): return modules[fullname]
     def find_spec(self, fullname, path, target=None):
