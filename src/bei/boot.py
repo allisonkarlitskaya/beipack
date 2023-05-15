@@ -17,12 +17,13 @@
 
 
 import argparse
+import threading
 import subprocess
 import os
 import shlex
 import sys
 
-from typing import Sequence
+from typing import IO, Sequence
 
 
 def get_python_command(local=False, tty=False, sh=False) -> Sequence[str]:
@@ -62,6 +63,30 @@ def get_command(*args, tty=False, sh=False) -> Sequence[str]:
     return (*args, *get_python_command(local=True, tty=tty, sh=sh))
 
 
+def splice_in_thread(src: int, dst: IO[bytes]) -> None:
+    def _thread() -> None:
+        # os.splice() only in Python 3.10
+        with dst:
+            block_size = 1 << 20
+            while True:
+                data = os.read(src, block_size)
+                if not data:
+                    break
+                dst.write(data)
+                dst.flush()
+
+    threading.Thread(target=_thread, daemon=True).start()
+
+
+def send_and_splice(command: Sequence[str], script: bytes):
+    with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
+        assert proc.stdin is not None
+        proc.stdin.write(script)
+
+        splice_in_thread(0, proc.stdin)
+        sys.exit(proc.wait())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--sh', action='store_true',
@@ -87,26 +112,11 @@ def main() -> None:
         os.execlp(command[0], *command)
 
     # Otherwise, "full strength"
-    with open(args.script, 'rb') as file:
-        script = file.read()
+    else:
+        with open(args.script, 'rb') as file:
+            script = file.read()
 
-    with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
-        assert proc.stdin is not None
-        proc.stdin.write(script)
-
-        # This is not exactly transparent behaviour: it models a form of
-        # communication where we send commands to the remote, followed by EOF,
-        # and then wait for the remote to exit.  If the program invoking us is
-        # waiting for the remote to exit first, this might deadlock.
-        while True:
-            data = os.read(0, 1024*1024)
-            if data == b'':
-                proc.stdin.close()
-                break
-
-            proc.stdin.write(data)
-
-        sys.exit(proc.wait())
+        send_and_splice(command, script)
 
 
 if __name__ == '__main__':
