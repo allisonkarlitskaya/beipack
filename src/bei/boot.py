@@ -58,8 +58,8 @@ def get_container_command(*args, tty=False) -> Sequence[str]:
             *get_python_command(tty=tty))
 
 
-def get_local_command(tty=False) -> Sequence[str]:
-    return get_python_command(local=True, tty=tty)
+def get_command(*args, tty=False, sh=False) -> Sequence[str]:
+    return (*args, *get_python_command(local=True, tty=tty, sh=sh))
 
 
 def main() -> None:
@@ -70,31 +70,17 @@ def main() -> None:
                         help="the script to run remotely (must be repl-friendly)")
     parser.add_argument('command', nargs='*')
 
-    """
-    subparsers = parser.add_subparsers(title='Connection type')
-
-    ssh_parser = subparsers.add_parser('ssh', help='Connect via ssh')
-    ssh_parser.add_argument('args', nargs='+')
-    ssh_parser.set_defaults(get_command=get_ssh_command)
-
-    container_parser = subparsers.add_parser('container', help='Run in a (running) container')
-    container_parser.add_argument('args', nargs='+')
-    container_parser.set_defaults(get_command=get_container_command)
-
-    parser.set_defaults(get_command=get_local_command, args=[])
-    """
-
     args = parser.parse_args()
     tty = not args.script and os.isatty(0)
 
     if args.command == []:
-        command = get_local_command(tty=tty)
+        command = get_python_command(tty=tty)
     elif args.command[0] == 'ssh':
         command = get_ssh_command(*args.command[1:], tty=tty)
     elif args.command[0] == 'container':
         command = get_container_command(*args.command[1:], tty=tty)
     else:
-        command = get_python_command(*args.command, tty=tty, sh=args.sh)
+        command = get_command(*args.command, tty=tty, sh=args.sh)
 
     # If we're streaming from stdin then this is a lot easier...
     if not args.script:
