@@ -7,7 +7,7 @@ import sys
 from . import pack, tmpfs
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--file', '-f', action='append')
     parser.add_argument('command', nargs='+', help='The command to execute')

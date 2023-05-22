@@ -17,16 +17,17 @@
 
 
 import argparse
-import threading
-import subprocess
 import os
 import shlex
+import subprocess
 import sys
-
+import threading
 from typing import IO, Sequence
 
 
-def get_python_command(local=False, tty=False, sh=False) -> Sequence[str]:
+def get_python_command(local: bool = False,
+                       tty: bool = False,
+                       sh: bool = False) -> Sequence[str]:
     interpreter = sys.executable if local else 'python3'
     command: Sequence[str]
 
@@ -45,21 +46,21 @@ def get_python_command(local=False, tty=False, sh=False) -> Sequence[str]:
     return command
 
 
-def get_ssh_command(*args, tty=False) -> Sequence[str]:
+def get_ssh_command(*args: str, tty: bool = False) -> Sequence[str]:
     return ('ssh',
             *(['-t'] if tty else ()),
             *args,
             *get_python_command(tty=tty, sh=True))
 
 
-def get_container_command(*args, tty=False) -> Sequence[str]:
+def get_container_command(*args: str, tty: bool = False) -> Sequence[str]:
     return ('podman', 'exec', '--interactive',
             *(['--tty'] if tty else ()),
             *args,
             *get_python_command(tty=tty))
 
 
-def get_command(*args, tty=False, sh=False) -> Sequence[str]:
+def get_command(*args: str, tty: bool = False, sh: bool = False) -> Sequence[str]:
     return (*args, *get_python_command(local=True, tty=tty, sh=sh))
 
 
@@ -78,7 +79,7 @@ def splice_in_thread(src: int, dst: IO[bytes]) -> None:
     threading.Thread(target=_thread, daemon=True).start()
 
 
-def send_and_splice(command: Sequence[str], script: bytes):
+def send_and_splice(command: Sequence[str], script: bytes) -> None:
     with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
         assert proc.stdin is not None
         proc.stdin.write(script)

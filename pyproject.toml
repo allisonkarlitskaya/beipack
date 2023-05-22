@@ -38,4 +38,13 @@ disable = [
 ]
 
 [tool.ruff]
-line-length = 118
+select = [
+  "ANN",
+  "A",
+  "B",
+  "C",
+  "E",
+  "F",
+  "G",
+  "I",
+]

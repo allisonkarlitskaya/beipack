@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import argparse
 import binascii
 import lzma
@@ -24,8 +23,9 @@ import string
 import sys
 import tempfile
 import zipfile
-
 from typing import Optional
+
+import bei.data
 
 
 def escape_string(data: str) -> str:
@@ -76,12 +76,32 @@ def bytes_repr(data: bytes) -> str:
 
 
 def dict_repr(contents: dict[str, bytes]) -> str:
-    return '{\n' + ''.join(f'  {repr(k)}: {bytes_repr(v)},\n' for k, v in contents.items()) + '}'
+    return ('{\n' +
+            ''.join(f'  {repr(k)}: {bytes_repr(v)},\n' for k, v in contents.items()) +
+            '}')
 
+def pack(contents: dict[str, bytes],
+         entrypoint: Optional[str] = None,
+         args: str = '',
+         template: Optional[str] = None) -> str:
+    """Creates a beipack with the given `contents`.
 
-def pack(contents: dict[str, bytes], entrypoint: Optional[str] = None, args: str = '', template: Optional[str] = None) -> str:
+    If `entrypoint` is given, it should be an entry point which is run as the
+    "main" function.  It is given in the `package.module:func format` such that
+    the following code is emitted:
+
+        from package.module import func as main
+        main()
+
+    Additionally, if `args` is given, it is written verbatim between the parens
+    of the call to main (ie: it should already be in Python syntax).
+
+    You can provide your own template, but if not, the beipack internal one
+    will be used.
+    """
+
     if template is None:
-        template = __loader__.get_data(os.path.dirname(__file__) + '/beipack.py.template').decode('ascii')
+        template = bei.data.get_file('beipack.py.template').read_text()
         template = ''.join(f'{line}\n' for line in template.splitlines() if line)
 
     result = string.Template(template).substitute(contents=dict_repr(contents))
@@ -95,7 +115,8 @@ def pack(contents: dict[str, bytes], entrypoint: Optional[str] = None, args: str
     return result
 
 
-def collect_contents(filenames: list[str], relative_to: Optional[str] = None) -> dict[str, bytes]:
+def collect_contents(filenames: list[str],
+                     relative_to: Optional[str] = None) -> dict[str, bytes]:
     contents: dict[str, bytes] = {}
 
     for filename in filenames:
@@ -127,16 +148,24 @@ def collect_pep517(path: str) -> dict[str, bytes]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--python', '-p', help="add a #!python3 interpreter line using the given path")
-    parser.add_argument('--xz', '-J', action='store_true', help="compress the output with `xz`")
-    parser.add_argument('--topdir', help="toplevel directory (ie: all paths are stored relative to this)")
-    parser.add_argument('--output', '-o', help="write output to a file (default: stdout)")
-    parser.add_argument('--main', '-m', metavar='MODULE:FUNC', help="use FUNC from MODULE as the main function")
-    parser.add_argument('--main-args', metavar='ARGS', help="arguments to main() in Python syntax", default='')
-    parser.add_argument('--zip', '-z', action='append', default=[], help="include files from a zipfile (or wheel)")
+    parser.add_argument('--python', '-p',
+                        help="add a #!python3 interpreter line using the given path")
+    parser.add_argument('--xz', '-J', action='store_true',
+                        help="compress the output with `xz`")
+    parser.add_argument('--topdir',
+                        help="toplevel directory (paths are stored relative to this)")
+    parser.add_argument('--output', '-o',
+                        help="write output to a file (default: stdout)")
+    parser.add_argument('--main', '-m', metavar='MODULE:FUNC',
+                        help="use FUNC from MODULE as the main function")
+    parser.add_argument('--main-args', metavar='ARGS',
+                        help="arguments to main() in Python syntax", default='')
+    parser.add_argument('--zip', '-z', action='append', default=[],
+                        help="include files from a zipfile (or wheel)")
     parser.add_argument('--build', metavar='DIR', action='append', default=[],
                         help="PEP-517 from a given source directory")
-    parser.add_argument('files', nargs='*', help="files to include in the beipack")
+    parser.add_argument('files', nargs='*',
+                        help="files to include in the beipack")
     args = parser.parse_args()
 
     contents = collect_contents(args.files, relative_to=args.topdir)
