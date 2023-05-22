@@ -15,7 +15,7 @@ classifiers = ["License :: OSI Approved :: GNU General Public License v3 or late
 Home = "https://github.com/allisonkarlitskaya/beipack/"
 
 [tool.setuptools.package-data]
-bei = ["*.py.template"]
+"bei.data" = ["*.py.template"]
 
 [project.scripts]
 beipack = 'bei.pack:main'
