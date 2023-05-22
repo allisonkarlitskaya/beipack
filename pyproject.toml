@@ -36,3 +36,6 @@ disable = [
   "R1705",  # Unnecessary "else" after "return"
   "W1113",  # Keyword argument before variable positional arguments  (PEP-570 is Python 3.8)
 ]
+
+[tool.ruff]
+line-length = 118
