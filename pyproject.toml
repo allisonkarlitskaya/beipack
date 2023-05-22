@@ -18,8 +18,8 @@ Home = "https://github.com/allisonkarlitskaya/beipack/"
 "bei.data" = ["*.py.template"]
 
 [project.scripts]
-beipack = 'bei.pack:main'
-beiboot = 'bei.boot:main'
+beipack = 'bei.beipack:main'
+beiboot = 'bei.beiboot:main'
 beipack-spawn = 'bei.spawn:main'
 
 [tool.mypy]
