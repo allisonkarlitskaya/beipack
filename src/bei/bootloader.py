@@ -54,7 +54,7 @@ STEP = {
                 ferny('ferny.end')
             exec(src, {
                 '__name__': '__main__',
-                '__source_xz__': src_xz,
+                '__self_source__': src_xz,
                 '__file__': filename})
             sys.exit()
     """,
