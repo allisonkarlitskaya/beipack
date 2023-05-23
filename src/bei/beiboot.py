@@ -102,6 +102,7 @@ def send_xz_and_splice(command: Sequence[str], script: bytes) -> None:
             assert proc.stdin is not None
             if command == 'beiboot.provide':
                 proc.stdin.write(script)
+                proc.stdin.flush()
 
     agent = ferny.InteractionAgent(Responder())
     with subprocess.Popen(command, stdin=subprocess.PIPE, stderr=agent) as proc:

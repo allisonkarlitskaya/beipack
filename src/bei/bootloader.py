@@ -27,6 +27,7 @@ STEP = {
         try:
             def ferny(command, *args):
                 sys.stderr.write(f{ferny.COMMAND_TEMPLATE!r})
+                sys.stderr.flush()
             ...
         except SystemExit:
             raise
