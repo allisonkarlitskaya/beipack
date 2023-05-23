@@ -80,6 +80,7 @@ def dict_repr(contents: dict[str, bytes]) -> str:
             ''.join(f'  {repr(k)}: {bytes_repr(v)},\n' for k, v in contents.items()) +
             '}')
 
+
 def pack(contents: dict[str, bytes],
          entrypoint: Optional[str] = None,
          args: str = '',
