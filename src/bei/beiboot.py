@@ -15,14 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import argparse
+import asyncio
 import os
 import shlex
 import subprocess
 import sys
 import threading
-from typing import IO, Sequence
+from typing import IO, List, Sequence, Tuple
+
+from .bootloader import make_bootloader
 
 
 def get_python_command(local: bool = False,
@@ -88,10 +90,37 @@ def send_and_splice(command: Sequence[str], script: bytes) -> None:
         sys.exit(proc.wait())
 
 
+def send_xz_and_splice(command: Sequence[str], script: bytes) -> None:
+    import ferny
+
+    class Responder(ferny.InteractionResponder):
+        async def do_custom_command(self,
+                                    command: str,
+                                    args: Tuple,
+                                    fds: List[int],
+                                    stderr: str) -> None:
+            assert proc.stdin is not None
+            if command == 'beiboot.provide':
+                proc.stdin.write(script)
+
+    agent = ferny.InteractionAgent(Responder())
+    with subprocess.Popen(command, stdin=subprocess.PIPE, stderr=agent) as proc:
+        assert proc.stdin is not None
+        proc.stdin.write(make_bootloader([
+            ('boot_xz', ('script.py.xz', len(script), [], True)),
+        ]).encode())
+        proc.stdin.flush()
+
+        asyncio.run(agent.communicate())
+        splice_in_thread(0, proc.stdin)
+        sys.exit(proc.wait())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--sh', action='store_true',
                         help='Pass Python interpreter command as shell-script')
+    parser.add_argument('--xz', help="the xz to run remotely")
     parser.add_argument('--script',
                         help="the script to run remotely (must be repl-friendly)")
     parser.add_argument('command', nargs='*')
@@ -108,17 +137,23 @@ def main() -> None:
     else:
         command = get_command(*args.command, tty=tty, sh=args.sh)
 
-    # If we're streaming from stdin then this is a lot easier...
-    if not args.script:
-        os.execlp(command[0], *command)
-
-    # Otherwise, "full strength"
-    else:
+    if args.script:
         with open(args.script, 'rb') as file:
             script = file.read()
 
         send_and_splice(command, script)
 
+    elif args.xz:
+        with open(args.xz, 'rb') as file:
+            script = file.read()
+
+        send_xz_and_splice(command, script)
+
+    else:
+        # If we're streaming from stdin then this is a lot easier...
+        os.execlp(command[0], *command)
+
+    # Otherwise, "full strength"
 
 if __name__ == '__main__':
     main()
