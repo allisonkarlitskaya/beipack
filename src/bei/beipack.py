@@ -19,7 +19,6 @@ import argparse
 import binascii
 import lzma
 import os
-import string
 import sys
 import tempfile
 import zipfile
@@ -105,9 +104,8 @@ def pack(contents: dict[str, bytes],
         template = bei.data.get_file('beipack.py.template').read_text()
         template = ''.join(f'{line}\n' for line in template.splitlines() if line)
 
-    result = string.Template(template).substitute(contents=dict_repr(contents))
-
-    result += '\nsys.meta_path.insert(0, BeipackLoader())\n'
+    contents_txt = dict_repr(contents)
+    result = f'{template}\nsys.meta_path.insert(0, BeipackLoader({contents_txt}))\n'
 
     if entrypoint:
         package, main = entrypoint.split(':')
