@@ -22,6 +22,21 @@ beipack = 'bei.beipack:main'
 beiboot = 'bei.beiboot:main'
 beipack-spawn = 'bei.spawn:main'
 
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+source_pkgs = ["bei"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",  # default
+  "raise NotImplementedError",
+]
+
 [tool.mypy]
 mypy_path = 'src'
 
@@ -37,6 +52,8 @@ disable = [
   "W1113",  # Keyword argument before variable positional arguments  (PEP-570 is Python 3.8)
 ]
 
+[tool.pytest.ini_options]
+
 [tool.ruff]
 select = [
   "ANN",
@@ -48,3 +65,21 @@ select = [
   "G",
   "I",
 ]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+# isolated_build = True
+envlist = site
+
+[testenv]
+deps=
+  pytest-cov
+  pytest-timeout
+commands=
+  python3 -m pytest {posargs}
+
+[testenv:site]
+sitepackages=True
+deps=
+"""
