@@ -6,9 +6,38 @@ import importlib.resources.abc
 import importlib.util
 import io
 import sys
+from typing import Dict, BinaryIO, Iterator
 
 
 class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
+    class ResourceReader(importlib.resources.abc.ResourceReader):
+        def __init__(self, contents: Dict[str, bytes], filename: str) -> None:
+            self._contents = contents
+            self._dir = f'{filename}/'
+
+        def is_resource(self, resource: str) -> bool:
+            return f'{self._dir}{resource}' in self._contents
+
+        def open_resource(self, resource: str) -> BinaryIO:
+            return io.BytesIO(self._contents[f'{self._dir}{resource}'])
+
+        def resource_path(self, resource: str) -> str:
+            raise FileNotFoundError
+
+        def contents(self) -> Iterator[str]:
+            dir_length = len(self._dir)
+            result = set()
+
+            for filename in self._contents:
+                if filename.startswith(self._dir):
+                    try:
+                        next_slash = filename.index('/', dir_length)
+                    except ValueError:
+                        next_slash = None
+                    result.add(filename[dir_length:next_slash])
+
+            return iter(result)
+
     def __init__(self, contents):
         try:
             contents[__file__] = __self_source__
@@ -30,11 +59,7 @@ class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
         return filename.replace("/", ".")
 
     def get_resource_reader(self, fullname):
-        filename = fullname.replace('.', '/')
-        class ResourceReader(importlib.resources.abc.ResourceReader):
-            def open_resource(resource):
-                return io.BytesIO(self.contents[f'{filename}/{resource}'])
-        return ResourceReader
+        return BeipackLoader.ResourceReader(self.contents, fullname.replace('.', '/'))
 
     def get_data(self, path):
         return self.contents[path]
