@@ -63,3 +63,19 @@ def test_cmdline(python_command: list[str],
     assert process.returncode == 0
     assert run_pack(process.stdout) == 'test world\n'
 
+
+def test_resources(python_command: list[str],
+                   pytestconfig: pytest.Config) -> None:
+    pack = beipack.pack(
+        {
+            'x/__init__.py': b'',
+            'x/y.py':
+                b'# can you hear me now?\n' +
+                b'from importlib import resources\n' +
+                b'def main():\n'
+                b'    print((resources.files("x") / "y.py").read_text())\n'
+        },
+        entrypoint='x.y:main'
+    )
+    print(pack)
+    assert 'can you hear me now' in run_pack(pack)

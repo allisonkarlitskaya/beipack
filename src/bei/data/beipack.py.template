@@ -2,7 +2,9 @@
 
 from binascii import a2b_base64
 import importlib.abc
+import importlib.resources.abc
 import importlib.util
+import io
 import sys
 
 
@@ -26,6 +28,13 @@ class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
         if filename.endswith("/__init__"):
             filename = filename[:-9]
         return filename.replace("/", ".")
+
+    def get_resource_reader(self, fullname):
+        filename = fullname.replace('.', '/')
+        class ResourceReader(importlib.resources.abc.ResourceReader):
+            def open_resource(resource):
+                return io.BytesIO(self.contents[f'{filename}/{resource}'])
+        return ResourceReader
 
     def get_data(self, path):
         return self.contents[path]
