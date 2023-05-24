@@ -1,11 +1,9 @@
 # beipack https://github.com/allisonkarlitskaya/beipack
 
-from binascii import a2b_base64
 import importlib.abc
 import importlib.resources.abc
 import importlib.util
 import io
-import sys
 from types import ModuleType
 from typing import BinaryIO, Dict, Iterator, Optional, Sequence
 

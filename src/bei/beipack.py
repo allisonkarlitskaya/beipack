@@ -45,14 +45,15 @@ def utf8_bytes_repr(data: bytes) -> str:
     return escape_string(data.decode('utf-8')) + ".encode('utf-8')"
 
 
-def base64_bytes_repr(data: bytes) -> str:
+def base64_bytes_repr(data: bytes, imports: set[str]) -> str:
     # base85 is smaller, but base64 is in C, and ~20x faster.
     # when compressing with `xz -e` the size difference is marginal.
+    imports.add('from binascii import a2b_base64')
     encoded = binascii.b2a_base64(data).decode('ascii').strip()
     return f'a2b_base64("{encoded}")'
 
 
-def bytes_repr(data: bytes) -> str:
+def bytes_repr(data: bytes, imports: set[str]) -> str:
     # Strategy:
     #   if the file is ascii, encode it directly as bytes
     #   otherwise, if it's UTF-8, use a unicode string and encode
@@ -71,19 +72,19 @@ def bytes_repr(data: bytes) -> str:
         # it's not utf-8
         pass
 
-    return base64_bytes_repr(data)
+    return base64_bytes_repr(data, imports)
 
 
-def dict_repr(contents: dict[str, bytes]) -> str:
+def dict_repr(contents: dict[str, bytes], imports: set[str]) -> str:
     return ('{\n' +
-            ''.join(f'  {repr(k)}: {bytes_repr(v)},\n' for k, v in contents.items()) +
+            ''.join(f'  {repr(k)}: {bytes_repr(v, imports)},\n'
+                    for k, v in contents.items()) +
             '}')
 
 
 def pack(contents: dict[str, bytes],
          entrypoint: Optional[str] = None,
-         args: str = '',
-         template: Optional[str] = None) -> str:
+         args: str = '') -> str:
     """Creates a beipack with the given `contents`.
 
     If `entrypoint` is given, it should be an entry point which is run as the
@@ -95,23 +96,23 @@ def pack(contents: dict[str, bytes],
 
     Additionally, if `args` is given, it is written verbatim between the parens
     of the call to main (ie: it should already be in Python syntax).
-
-    You can provide your own template, but if not, the beipack internal one
-    will be used.
     """
 
-    if template is None:
-        template = bei.data.get_file('beipack.py.template').read_text()
-        template = ''.join(f'{line}\n' for line in template.splitlines() if line)
+    loader = bei.data.get_file('beipack_loader.py').read_text()
+    lines = [line for line in loader.splitlines() if line]
+    lines.append('')
 
-    contents_txt = dict_repr(contents)
-    result = f'{template}\nsys.meta_path.insert(0, BeipackLoader({contents_txt}))\n'
+    imports = {'import sys'}
+    contents_txt = dict_repr(contents, imports)
+    lines.extend(imports)
+    lines.append(f'sys.meta_path.insert(0, BeipackLoader({contents_txt}))')
 
     if entrypoint:
         package, main = entrypoint.split(':')
-        result += f'from {package} import {main} as main\nmain({args})\n'
+        lines.append(f'from {package} import {main} as main')
+        lines.append(f'main({args})')
 
-    return result
+    return ''.join(f'{line}\n' for line in lines)
 
 
 def collect_contents(filenames: list[str],
