@@ -65,6 +65,7 @@ select = [
   "G",
   "I",
 ]
+src = ["src"]
 
 [tool.tox]
 legacy_tox_ini = """
