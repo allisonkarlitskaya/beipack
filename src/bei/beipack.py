@@ -22,7 +22,7 @@ import os
 import sys
 import tempfile
 import zipfile
-from typing import Optional
+from typing import Dict, Iterable, Optional, Tuple
 
 from .data import get_file
 
@@ -126,6 +126,21 @@ def collect_contents(filenames: list[str],
     return contents
 
 
+def collect_module(name: str, *, recursive: bool) -> Dict[str, bytes]:
+    import importlib.resources
+    from importlib.resources.abc import Traversable
+
+    def walk(path: str, entry: Traversable) -> Iterable[Tuple[str, bytes]]:
+        for item in entry.iterdir():
+            itemname = f'{path}/{item.name}'
+            if item.is_file():
+                yield itemname, item.read_bytes()
+            elif recursive and item.name != '__pycache__':
+                yield from walk(itemname, item)
+
+    return dict(walk(name.replace('.', '/'), importlib.resources.files(name)))
+
+
 def collect_zip(filename: str) -> dict[str, bytes]:
     contents = {}
 
@@ -160,6 +175,8 @@ def main() -> None:
                         help="use FUNC from MODULE as the main function")
     parser.add_argument('--main-args', metavar='ARGS',
                         help="arguments to main() in Python syntax", default='')
+    parser.add_argument('--module', action='append', default=[],
+                        help="collect installed modules (recursively)")
     parser.add_argument('--zip', '-z', action='append', default=[],
                         help="include files from a zipfile (or wheel)")
     parser.add_argument('--build', metavar='DIR', action='append', default=[],
@@ -172,6 +189,9 @@ def main() -> None:
 
     for file in args.zip:
         contents.update(collect_zip(file))
+
+    for name in args.module:
+        contents.update(collect_module(name, recursive=True))
 
     for path in args.build:
         contents.update(collect_pep517(path))

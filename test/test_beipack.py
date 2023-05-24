@@ -86,3 +86,9 @@ def test_resources(python_command: list[str],
     assert "'__init__.py'" in result
     assert "'subdir'" in result
     assert "'y.py'" in result
+
+
+def test_collect_module() -> None:
+    # See if we can find ourselves
+    all_tests = beipack.collect_module('test', recursive=True)
+    assert b'woh, this is so meta' in all_tests['test/test_beipack.py']
