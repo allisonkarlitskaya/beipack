@@ -6,7 +6,8 @@ import importlib.resources.abc
 import importlib.util
 import io
 import sys
-from typing import Dict, BinaryIO, Iterator
+from types import ModuleType
+from typing import BinaryIO, Dict, Iterator, Optional, Sequence
 
 
 class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
@@ -38,9 +39,12 @@ class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
 
             return iter(result)
 
-    def __init__(self, contents):
+    contents: Dict[str, bytes]
+    modules: Dict[str, str]
+
+    def __init__(self, contents: Dict[str, bytes]) -> None:
         try:
-            contents[__file__] = __self_source__
+            contents[__file__] = __self_source__  # type: ignore[name-defined]
         except NameError:
             pass
 
@@ -51,23 +55,30 @@ class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
             if filename.endswith(".py")
         }
 
-    def get_fullname(self, filename):
+    def get_fullname(self, filename: str) -> str:
         assert filename.endswith(".py")
         filename = filename[:-3]
         if filename.endswith("/__init__"):
             filename = filename[:-9]
         return filename.replace("/", ".")
 
-    def get_resource_reader(self, fullname):
+    def get_resource_reader(
+        self, fullname: str
+    ) -> importlib.resources.abc.ResourceReader:
         return BeipackLoader.ResourceReader(self.contents, fullname.replace('.', '/'))
 
-    def get_data(self, path):
+    def get_data(self, path: str) -> bytes:
         return self.contents[path]
 
-    def get_filename(self, fullname):
+    def get_filename(self, fullname: str) -> str:
         return self.modules[fullname]
 
-    def find_spec(self, fullname, path, target=None):
+    def find_spec(
+        self,
+        fullname: str,
+        path: Optional[Sequence[str]],
+        target: Optional[ModuleType] = None
+      ) -> Optional[importlib.machinery.ModuleSpec]:
         if fullname not in self.modules:
             return None
         return importlib.util.spec_from_loader(fullname, self)
