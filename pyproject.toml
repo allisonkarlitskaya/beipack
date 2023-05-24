@@ -65,6 +65,9 @@ select = [
   "G",
   "I",
 ]
+ignore = [
+  "ANN101",      # Missing type annotation for `self` in method  (`Self` not in py36)
+]
 src = ["src"]
 
 [tool.tox]
