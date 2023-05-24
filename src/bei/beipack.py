@@ -24,7 +24,7 @@ import tempfile
 import zipfile
 from typing import Optional
 
-import bei.data
+from .data import get_file
 
 
 def escape_string(data: str) -> str:
@@ -98,7 +98,7 @@ def pack(contents: dict[str, bytes],
     of the call to main (ie: it should already be in Python syntax).
     """
 
-    loader = bei.data.get_file('beipack_loader.py').read_text()
+    loader = get_file('beipack_loader.py').read_text()
     lines = [line for line in loader.splitlines() if line]
     lines.append('')
 
