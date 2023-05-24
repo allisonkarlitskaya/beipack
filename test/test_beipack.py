@@ -17,6 +17,26 @@ def python_command() -> list[str]:
     return cmd
 
 
+def run_pack(pack: str) -> str:
+    run_process = subprocess.Popen([sys.executable, '-iq'],
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   text=True)
+
+    stdout, stderr = run_process.communicate(pack)
+
+    # stderr should have a lot of >>> >>> >>> >>> >>> >>> >>> ... ... ...
+    assert '>>> ' in stderr
+    assert '... ' in stderr
+    # ... but nothing else
+    if stderr.lstrip('.> \n'):
+        print(stderr.lstrip('.> \n'))
+        pytest.fail('Unexpected stderr')
+
+    return stdout
+
+
 def test_api() -> None:
     assert beipack.pack({}) != ''
 
@@ -29,7 +49,6 @@ def test_path() -> None:
 
 
 def test_cmdline(python_command: list[str],
-                 capsys: pytest.CaptureFixture,
                  pytestconfig: pytest.Config) -> None:
     process = subprocess.run([
         *python_command,
@@ -42,8 +61,5 @@ def test_cmdline(python_command: list[str],
 
     assert process.stderr == ''
     assert process.returncode == 0
+    assert run_pack(process.stdout) == 'test world\n'
 
-    exec(process.stdout, {})
-
-    captured = capsys.readouterr()
-    assert captured.out == "test world\n"
