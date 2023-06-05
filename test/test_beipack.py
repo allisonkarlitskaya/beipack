@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from typing import List
 
 import pytest
 
@@ -8,7 +9,7 @@ from bei import beipack
 
 
 @pytest.fixture
-def python_command() -> list[str]:
+def python_command() -> List[str]:
     cmd = [sys.executable]
 
     if 'COVERAGE_RCFILE' in os.environ:
@@ -48,7 +49,7 @@ def test_path() -> None:
     assert process.returncode == 0
 
 
-def test_cmdline(python_command: list[str],
+def test_cmdline(python_command: List[str],
                  pytestconfig: pytest.Config) -> None:
     process = subprocess.run([
         *python_command,
@@ -65,7 +66,7 @@ def test_cmdline(python_command: list[str],
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python3.11 or higher")
-def test_resources(python_command: list[str],
+def test_resources(python_command: List[str],
                    pytestconfig: pytest.Config) -> None:
     pack = beipack.pack(
         {
