@@ -22,7 +22,7 @@ import os
 import sys
 import tempfile
 import zipfile
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from .data import read_data_file
 
@@ -45,7 +45,7 @@ def utf8_bytes_repr(data: bytes) -> str:
     return escape_string(data.decode('utf-8')) + ".encode('utf-8')"
 
 
-def base64_bytes_repr(data: bytes, imports: set[str]) -> str:
+def base64_bytes_repr(data: bytes, imports: Set[str]) -> str:
     # base85 is smaller, but base64 is in C, and ~20x faster.
     # when compressing with `xz -e` the size difference is marginal.
     imports.add('from binascii import a2b_base64')
@@ -53,7 +53,7 @@ def base64_bytes_repr(data: bytes, imports: set[str]) -> str:
     return f'a2b_base64("{encoded}")'
 
 
-def bytes_repr(data: bytes, imports: set[str]) -> str:
+def bytes_repr(data: bytes, imports: Set[str]) -> str:
     # Strategy:
     #   if the file is ascii, encode it directly as bytes
     #   otherwise, if it's UTF-8, use a unicode string and encode
@@ -75,14 +75,14 @@ def bytes_repr(data: bytes, imports: set[str]) -> str:
     return base64_bytes_repr(data, imports)
 
 
-def dict_repr(contents: dict[str, bytes], imports: set[str]) -> str:
+def dict_repr(contents: Dict[str, bytes], imports: Set[str]) -> str:
     return ('{\n' +
             ''.join(f'  {repr(k)}: {bytes_repr(v, imports)},\n'
                     for k, v in contents.items()) +
             '}')
 
 
-def pack(contents: dict[str, bytes],
+def pack(contents: Dict[str, bytes],
          entrypoint: Optional[str] = None,
          args: str = '') -> str:
     """Creates a beipack with the given `contents`.
@@ -115,9 +115,9 @@ def pack(contents: dict[str, bytes],
     return ''.join(f'{line}\n' for line in lines)
 
 
-def collect_contents(filenames: list[str],
-                     relative_to: Optional[str] = None) -> dict[str, bytes]:
-    contents: dict[str, bytes] = {}
+def collect_contents(filenames: List[str],
+                     relative_to: Optional[str] = None) -> Dict[str, bytes]:
+    contents: Dict[str, bytes] = {}
 
     for filename in filenames:
         with open(filename, 'rb') as file:
@@ -141,7 +141,7 @@ def collect_module(name: str, *, recursive: bool) -> Dict[str, bytes]:
     return dict(walk(name.replace('.', '/'), importlib.resources.files(name)))
 
 
-def collect_zip(filename: str) -> dict[str, bytes]:
+def collect_zip(filename: str) -> Dict[str, bytes]:
     contents = {}
 
     with zipfile.ZipFile(filename) as file:
@@ -153,7 +153,7 @@ def collect_zip(filename: str) -> dict[str, bytes]:
     return contents
 
 
-def collect_pep517(path: str) -> dict[str, bytes]:
+def collect_pep517(path: str) -> Dict[str, bytes]:
     with tempfile.TemporaryDirectory() as tmpdir:
         import build
         builder = build.ProjectBuilder(path)
