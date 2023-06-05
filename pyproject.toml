@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 61"]
+requires = ["setuptools >= 59.6.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,11 +13,6 @@ classifiers = ["License :: OSI Approved :: GNU General Public License v3 or late
 
 [project.urls]
 Home = "https://github.com/allisonkarlitskaya/beipack/"
-
-[project.scripts]
-beipack = 'bei.beipack:main'
-beiboot = 'bei.beiboot:main'
-beipack-spawn = 'bei.spawn:main'
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
