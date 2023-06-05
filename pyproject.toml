@@ -73,7 +73,6 @@ src = ["src"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-# isolated_build = True
 envlist = site
 
 [testenv]
@@ -84,6 +83,6 @@ commands=
   python3 -m pytest {posargs}
 
 [testenv:site]
-sitepackages=True
-deps=
+install_command = python3 -m pip install --no-index --no-build-isolation
+system_site_packages = True
 """
