@@ -23,7 +23,7 @@ def run_pack(pack: str) -> str:
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   text=True)
+                                   universal_newlines=True)
 
     stdout, stderr = run_process.communicate(pack)
 
@@ -43,7 +43,9 @@ def test_api() -> None:
 
 
 def test_path() -> None:
-    process = subprocess.run(['beipack'], capture_output=True, text=True)
+    process = subprocess.run(['beipack'],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             universal_newlines=True)
     assert process.stderr == ''
     assert process.stdout != ''
     assert process.returncode == 0
@@ -52,13 +54,14 @@ def test_path() -> None:
 def test_cmdline(python_command: List[str],
                  pytestconfig: pytest.Config) -> None:
     process = subprocess.run([
-        *python_command,
-        '-m', 'bei.beipack',
-        '--main', 'hello:main',
-        '--main-args="test"',
-        '--topdir=test/files',
-        'test/files/hello.py',
-    ], capture_output=True, text=True, cwd=pytestconfig.rootpath)
+            *python_command,
+            '-m', 'bei.beipack',
+            '--main', 'hello:main',
+            '--main-args="test"',
+            '--topdir=test/files',
+            'test/files/hello.py',
+        ], cwd=pytestconfig.rootpath,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
     assert process.stderr == ''
     assert process.returncode == 0
