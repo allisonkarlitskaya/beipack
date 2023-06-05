@@ -1,15 +1,20 @@
 # beipack https://github.com/allisonkarlitskaya/beipack
 
 import importlib.abc
-import importlib.resources.abc
 import importlib.util
 import io
+import sys
 from types import ModuleType
 from typing import BinaryIO, Dict, Iterator, Optional, Sequence
 
 
 class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
-    class ResourceReader(importlib.resources.abc.ResourceReader):
+    if sys.version_info >= (3, 11):
+        from importlib.resources.abc import ResourceReader as AbstractResourceReader
+    else:
+        AbstractResourceReader = object
+
+    class ResourceReader(AbstractResourceReader):
         def __init__(self, contents: Dict[str, bytes], filename: str) -> None:
             self._contents = contents
             self._dir = f'{filename}/'
@@ -60,9 +65,7 @@ class BeipackLoader(importlib.abc.SourceLoader, importlib.abc.MetaPathFinder):
             filename = filename[:-9]
         return filename.replace("/", ".")
 
-    def get_resource_reader(
-        self, fullname: str
-    ) -> importlib.resources.abc.ResourceReader:
+    def get_resource_reader(self, fullname: str) -> ResourceReader:
         return BeipackLoader.ResourceReader(self.contents, fullname.replace('.', '/'))
 
     def get_data(self, path: str) -> bytes:

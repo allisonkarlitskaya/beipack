@@ -64,6 +64,7 @@ def test_cmdline(python_command: list[str],
     assert run_pack(process.stdout) == 'test world\n'
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python3.11 or higher")
 def test_resources(python_command: list[str],
                    pytestconfig: pytest.Config) -> None:
     pack = beipack.pack(
@@ -88,6 +89,7 @@ def test_resources(python_command: list[str],
     assert "'y.py'" in result
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python3.11 or higher")
 def test_collect_module() -> None:
     # See if we can find ourselves
     all_tests = beipack.collect_module('test', recursive=True)
