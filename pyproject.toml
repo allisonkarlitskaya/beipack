@@ -83,6 +83,6 @@ commands=
   python3 -m pytest {posargs}
 
 [testenv:site]
-install_command = python3 -m pip install --no-index --no-build-isolation
+install_command = python3 -m pip install --no-index --no-build-isolation {opts} {packages}
 system_site_packages = True
 """
