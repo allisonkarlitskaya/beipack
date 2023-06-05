@@ -16,23 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import textwrap
-from typing import Iterable, List, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
-import ferny
-
-STEP = {
-    "_frame": rf"""
+GADGETS = {
+    "_frame": r"""
         import sys
         import traceback
         try:
-            def ferny(command, *args):
-                sys.stderr.write(f{ferny.COMMAND_TEMPLATE!r})
-                sys.stderr.flush()
             ...
         except SystemExit:
             raise
         except BaseException:
-            ferny('beiboot.exc', traceback.format_exc())
+            command('beiboot.exc', traceback.format_exc())
             sys.exit(37)
     """,
     "try_exec": r"""
@@ -46,12 +41,12 @@ STEP = {
         import lzma
         import sys
         def boot_xz(filename, size, args=[], send_end=False):
-            ferny('beiboot.provide', size)
+            command('beiboot.provide', size)
             src_xz = sys.stdin.buffer.read(size)
             src = lzma.decompress(src_xz)
             sys.argv = [filename, *args]
             if send_end:
-                ferny('ferny.end')
+                end()
             exec(src, {
                 '__name__': '__main__',
                 '__self_source__': src_xz,
@@ -61,8 +56,8 @@ STEP = {
 }
 
 
-def get_code(name: str, imports: Set[str]) -> Iterable[Tuple[str, str]]:
-    for line in textwrap.dedent(STEP[name]).splitlines():
+def split_code(code: str, imports: Set[str]) -> Iterable[Tuple[str, str]]:
+    for line in textwrap.dedent(code).splitlines():
         text = line.lstrip(" ")
         if text.startswith("import "):
             imports.add(text)
@@ -72,16 +67,34 @@ def get_code(name: str, imports: Set[str]) -> Iterable[Tuple[str, str]]:
             yield "\t" * (spaces // 4), text
 
 
-def make_bootloader(steps: Sequence[Tuple[str, Sequence[object]]]) -> str:
+def yield_body(user_gadgets: Dict[str, str],
+               steps: Sequence[Tuple[str, Sequence[object]]],
+               imports: Set[str]) -> Iterable[Tuple[str, str]]:
+    # Allow the caller to override our gadgets, but keep the original
+    # variable for use in the next step.
+    gadgets = dict(GADGETS, **user_gadgets)
+
+    # First emit the gadgets.  Emit all gadgets provided by the caller,
+    # plus any referred to by the caller's list of steps.
+    provided_gadgets = set(user_gadgets)
+    step_gadgets = {name for name, _args in steps}
+    for name in provided_gadgets | step_gadgets:
+        yield from split_code(gadgets[name], imports)
+
+    # Yield functions mentioned in steps from the caller
+    for name, args in steps:
+        yield '', name + repr(tuple(args))
+
+
+def make_bootloader(steps: Sequence[Tuple[str, Sequence[object]]],
+                    gadgets: Optional[Dict[str, str]] = None) -> str:
     imports: Set[str] = set()
     lines: List[str] = []
 
-    for frame_spaces, frame_text in get_code("_frame", imports):
+    for frame_spaces, frame_text in split_code(GADGETS["_frame"], imports):
         if frame_text == "...":
-            for name, args in steps:
-                for spaces, text in get_code(name, imports):
-                    lines.append(frame_spaces + spaces + text)
-                lines.append(frame_spaces + name + repr(tuple(args)))
+            for spaces, text in yield_body(gadgets or {}, steps, imports):
+                lines.append(frame_spaces + spaces + text)
         else:
             lines.append(frame_spaces + frame_text)
 

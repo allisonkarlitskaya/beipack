@@ -109,7 +109,7 @@ def send_xz_and_splice(command: Sequence[str], script: bytes) -> None:
         assert proc.stdin is not None
         proc.stdin.write(make_bootloader([
             ('boot_xz', ('script.py.xz', len(script), [], True)),
-        ]).encode())
+        ], gadgets=ferny.BEIBOOT_GADGETS).encode())
         proc.stdin.flush()
 
         asyncio.run(agent.communicate())
