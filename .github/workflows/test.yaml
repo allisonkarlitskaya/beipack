@@ -36,3 +36,6 @@ jobs:
 
       - name: Run test for Python 3.7 venv
         run: tox -e py37
+
+      - name: Run test for Python 3.6 venv
+        run: tox -e py36
