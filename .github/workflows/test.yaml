@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  tox:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:latest
+    permissions: {}
+    timeout-minutes: 10
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+
+      - name: Install test dependencies
+        run: dnf install -y tox python3-pytest-cov python3-pytest-timeout
+
+      - name: Run test with site packages
+        run: tox
+
+      - name: Run test for Python 3.12 venv
+        run: tox -e py312
+
+      - name: Run test for Python 3.11 venv
+        run: tox -e py311
