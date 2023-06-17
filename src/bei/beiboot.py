@@ -94,6 +94,8 @@ def send_xz_and_splice(command: Sequence[str], script: bytes) -> None:
     import ferny
 
     class Responder(ferny.InteractionResponder):
+        commands = ('beiboot.provide',)
+
         async def do_custom_command(self,
                                     command: str,
                                     args: Tuple,
